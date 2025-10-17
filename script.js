@@ -1,144 +1,180 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const loginMenu = document.getElementById('user_data');
-    const loginButton = document.getElementById('login_btn');
-    const knownUserMenu = document.getElementById('known_user')
-    const sendButton = document.getElementById('send_btn');
-    const user_name = document.getElementById('name');
-    const password = document.getElementById('password');
-    const rememberMe = document.getElementById('remember_me');
+const tracks = [
+    { title: "Тайна", src: "songs/song1.mp3", author: "Кукрыниксы", text: "texts/text1.txt" },
+    { title: "Над пропастью во ржи", src: "songs/song2.mp3", author: "Би-2", text: "texts/text2.txt" },
+    { title: "Добрые люди", src: "songs/song3.mp3", author: "Король и Шут", text: "texts/text3.txt" },
+    { title: "Message man", src: "songs/song4.mp3", author: "Twenty one pilots", text: "texts/text4.txt" },
+    { title: "Crying Lightning", src: "songs/song5.mp3", author: "Arctic Monkeys", text: "texts/text5.txt" },
+    { title: "Планы", src: "songs/song6.mp3", author: "Владимир Клявин", text: "texts/text6.txt" },
+];
 
-    const choices = document.getElementById('choices');
-    const result = document.getElementById('result');
-    const result_head = document.getElementById('result_name');
-    const answer = document.getElementById('answer');
-    const choice_head = document.getElementById('choice_name');
 
-    const knownUserName = document.getElementById('known_user_name');
-    const acceptBtn = document.getElementById('accept');
-    const cancelBtn = document.getElementById('cancel');
+let trackIndex = 0;
+let mixed = false;
+let showingText = 1;
 
-    const toLoginBtn = document.getElementById('to_login_btn')
 
-    choices.style.display = 'none';
-    result.style.display = 'none';
-    knownUserMenu.style.display = 'none';
+const listHead = document.getElementById('listHead');
+const trackList = document.getElementById('trackList');
+const btns = document.getElementById('btns');
+const nowPlaying = document.getElementById('nowPlaying');
+const audio = document.getElementById('audio');
+const toMenuBtn = document.getElementById('toMenuBtn')
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const volumeInput = document.getElementById('volumeInput');
+const mixBtn = document.getElementById('mixBtn');
+const textBtn = document.getElementById('textBtn');
+const songText = document.getElementById('songtext');
+const playBtn = document.getElementById('playBtn');
+const progressBar = document.getElementById('progressBar');
+const downloadBtn = document.getElementById('downloadBtn');
 
-    const range = document.getElementById('ten_answer');
-    const output = document.getElementById('tel_value');
-    range.addEventListener('input', () => {
-    output.textContent = range.value;
-    });
 
-    loginButton.addEventListener('click', function (event) {
-    event.preventDefault();
+trackList.style.display = 'block';
+listHead.style.display = 'block';
+btns.style.display = 'none'
 
-    if (!user_name.value || !password.value) {
-        alert('Пожалуйста, введите логин и пароль.');
-        return;
-    }
 
-    const savedName = localStorage.getItem('rememberedName');
-    const testCompleted = localStorage.getItem('testCompleted');
+tracks.forEach((track, index) => {
+  const li = document.createElement('li');
+  li.textContent = track.title;
+  li.addEventListener('click', () => loadTrack(index));
+  trackList.append(li);
+});
 
-    if (rememberMe.checked) {
-    localStorage.setItem('rememberedName', user_name.value);
-    } else {
-        localStorage.removeItem('rememberedName');
-    }
 
-    if (savedName === user_name.value && testCompleted === 'true') {
-        knownUserName.textContent = `Добро пожаловать, ${user_name.value}!`;
-        loginMenu.style.display = 'none';
-        knownUserMenu.style.display = 'block';
+function loadTrack(index) {
+  trackIndex = index;
+  audio.src = tracks[index].src;
+  nowPlaying.innerHTML = `<strong>${tracks[index].title}</strong><br>${tracks[index].author}`;
+  highlightActiveTrack();
+  btns.style.display = 'block';
+  trackList.style.display = 'none';
+  listHead.style.display = 'none';
+  audio.play();
+  progressBar.value = 0;
+  progressBar.max = 0;
+}
 
-        acceptBtn.onclick = () => {
-            knownUserMenu.style.display = 'none';
-            result.style.display = 'block';
-            result_head.textContent = `Результаты ${user_name.value}`;
-            const savedResults = JSON.parse(localStorage.getItem('savedResults'));
-            let formatted = '';
-            for (const [key, value] of Object.entries(savedResults)) {
-            if (key !== 'Цвет') {
-                formatted += `<strong>${key}:</strong> ${value}<br>`;
-            }
-            }
-            answer.innerHTML = formatted;
-            answer.style.backgroundColor = savedResults['Цвет'];
-        };
 
-        cancelBtn.onclick = () => {
-            knownUserMenu.style.display = 'none';
-            choices.style.display = 'block';
-            choice_head.textContent = `Анкета ${user_name.value}`;
-        };
-    } else {
-        loginMenu.style.display = 'none';
-        choices.style.display = 'block';
-        choice_head.textContent = `Анкета ${user_name.value}`;
-    }
+function backToMenu() {
+  trackList.style.display = 'block';
+  listHead.style.display = 'block';
+  btns.style.display = 'none'
+  document.getElementById('textarea').style.display = 'none';
+}
 
-    });
 
-    sendButton.addEventListener('click', function () {
-    const fir_answ = document.getElementById('first_answer').value;
-    const sec_answ = document.getElementById('second_answer').value;
+function highlightActiveTrack() {
+  document.querySelectorAll('#trackList li').forEach((li, idx) => {
+    li.classList.toggle('active', idx === trackIndex);
+  });
+}
 
-    const thir_radio = document.querySelector('input[name="third_answer"]:checked');
-    const thir_answ = thir_radio ? thir_radio.parentElement.textContent.trim() : '';
 
-    const four_select = document.getElementById('four_question');
-    const four_answ = four_select.options[four_select.selectedIndex].text;
+textBtn.addEventListener('click', () => {
+  if (showingText == 1){
+    const textPath = tracks[trackIndex].text;
+    fetch(textPath)
+      .then(response => {
+        if (!response.ok) throw new Error('Ошибка загрузки текста');
+        return response.text();
+      })
+      .then(text => {
+        songText.textContent = text;
+        document.getElementById('textarea').style.display = 'block';
+      })
+      .catch(error => {
+        songText.textContent = 'Не удалось загрузить текст песни.';
+        document.getElementById('textarea').style.display = 'block';
+      });
+  }
+  else {
+    document.getElementById('textarea').style.display = 'none';
+  }
+  showingText *= -1
+});
 
-    const five_answ = document.getElementById('five_answer').value;
 
-    const six_checkboxes = document.querySelectorAll('input[name="six_answer"]:checked');
-    const six_answ = Array.from(six_checkboxes).map(cb => cb.value).join(', ');
+toMenuBtn.addEventListener('click', backToMenu)
 
-    const seven_answ = document.getElementById('seven_answer').value;
-    const eight_answ = document.getElementById('eight_answer').value;
-    const nine_answ = document.getElementById('nine_answer').value;
-    const ten_answ = document.getElementById('ten_answer').value;
 
-    if (!fir_answ || !sec_answ || !thir_answ || !four_answ || !five_answ || !six_answ || !seven_answ || !eight_answ || !nine_answ || !ten_answ) {
-        alert('Пожалуйста, ответьте на все обязательные вопросы!');
-        return;
-    }
+prevBtn.addEventListener('click', () => {
+  if (mixed) {
+    loadTrack(getRandomIndex());
+  } else {
+    loadTrack((trackIndex - 1 + tracks.length) % tracks.length);
+  }
+  document.getElementById('textarea').style.display = 'none';
+  showingText = 1
+});
 
-    choices.style.display = 'none';
-    result.style.display = 'block';
-    result_head.textContent = `Результаты ${user_name.value}`;
-    answer.innerHTML =
-        `<strong>Имя:</strong> ${fir_answ}<br>` +
-        `<strong>Возраст:</strong> ${sec_answ}<br>` +
-        `<strong>Какой Вы кот:</strong> ${thir_answ}<br>` +
-        `<strong>Любимое занятие:</strong> ${four_answ}<br>` +
-        `<strong>День рождения:</strong> ${five_answ}<br>` +
-        `<strong>Любимые языки:</strong> ${six_answ}<br>` +
-        `<strong>Как перевезти воду в дуршлаге:</strong> ${seven_answ}<br>` +
-        `<strong>Время:</strong> ${eight_answ}<br>` +
-        `<strong>Номер телефона:</strong> +375${ten_answ}`;
+nextBtn.addEventListener('click', () => {
+  if (mixed) {
+    loadTrack(getRandomIndex());
+  } else {
+    loadTrack((trackIndex + 1) % tracks.length);
+  }
+  document.getElementById('textarea').style.display = 'none';
+  showingText = 1
+});
 
-    answer.style.backgroundColor = nine_answ
 
-    const resultData = {
-        Имя: fir_answ,
-        Возраст: sec_answ,
-        Кот: thir_answ,
-        Занятие: four_answ,
-        ДеньРождения: five_answ,
-        Языки: six_answ,
-        Дуршлаг: seven_answ,
-        Время: eight_answ,
-        Телефон: `+375${ten_answ}`,
-        Цвет: nine_answ
-    };
+volumeInput.addEventListener('input', () => {
+  audio.volume = volumeInput.value;
+});
 
-    localStorage.setItem('savedResults', JSON.stringify(resultData));
-    localStorage.setItem('testCompleted', 'true');
 
-    });
+mixBtn.addEventListener('click', () => {
+  mixed = !mixed;
+  mixBtn.style.background = mixed ? '#f3d36aff' : '';
+});
 
-    toLoginBtn.addEventListener('click', function () {
-    location.reload();
-    });
+
+function getRandomIndex() {
+  let rand;
+  do {
+    rand = Math.floor(Math.random() * tracks.length);
+  } while (rand === trackIndex && tracks.length > 1);
+  return rand;
+}
+
+playBtn.addEventListener('click', () => {
+  if (audio.paused) {
+    audio.play();
+  } else {
+    audio.pause();
+  }
+});
+
+audio.addEventListener('play', () => {
+  playBtn.textContent = '⏸';
+});
+
+audio.addEventListener('pause', () => {
+  playBtn.textContent = '▶️';
+});
+
+audio.addEventListener('ended', () => {
+  playBtn.textContent = '▶️';
+  nextBtn.click();
+});
+
+audio.addEventListener('timeupdate', () => {
+  progressBar.max = Math.floor(audio.duration) || 0;
+  progressBar.value = Math.floor(audio.currentTime);
+});
+
+progressBar.addEventListener('input', () => {
+  audio.currentTime = progressBar.value;
+});
+
+downloadBtn.addEventListener('click', () => {
+  const track = tracks[trackIndex];
+  const link = document.createElement('a');
+  link.href = track.src;
+  link.download = `${track.title} - ${track.author}.mp3`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 });
