@@ -1,180 +1,103 @@
-const tracks = [
-    { title: "Тайна", src: "songs/song1.mp3", author: "Кукрыниксы", text: "texts/text1.txt" },
-    { title: "Над пропастью во ржи", src: "songs/song2.mp3", author: "Би-2", text: "texts/text2.txt" },
-    { title: "Добрые люди", src: "songs/song3.mp3", author: "Король и Шут", text: "texts/text3.txt" },
-    { title: "Message man", src: "songs/song4.mp3", author: "Twenty one pilots", text: "texts/text4.txt" },
-    { title: "Crying Lightning", src: "songs/song5.mp3", author: "Arctic Monkeys", text: "texts/text5.txt" },
-    { title: "Планы", src: "songs/song6.mp3", author: "Владимир Клявин", text: "texts/text6.txt" },
+const wordInput = document.getElementById("word_for_play");
+const startBtn = document.getElementById("to_game_btn");
+const answerDiv = document.getElementById("answer");
+const gallowsImg = document.getElementById("gallows_img");
+const gallowsImgRes = document.getElementById("gallows_img_res");
+const lettersDiv = document.getElementById("latters");
+const resultText = document.getElementById("res_text");
+const newGameBtn = document.getElementById("new_game");
+const inputWordDiv = document.getElementById("input_word")
+const gameDiv = document.getElementById("Game")
+const resultsDiv = document.getElementById("results")
+
+let secretWord = "";
+let displayWord = [];
+let wrongAttempts = 0;
+const maxAttempts = 10;
+
+const gallowsStages = [
+    "assets/stage_0.png",
+    "assets/stage_1.png",
+    "assets/stage_2.png",
+    "assets/stage_3.png",
+    "assets/stage_4.png",
+    "assets/stage_5.png",
+    "assets/stage_6.png",
+    "assets/stage_7.png",
+    "assets/stage_8.png",
+    "assets/stage_9.png",
+    "assets/stage_10.png",
+    "assets/stage_win.png"
 ];
 
+startBtn.addEventListener("click", () => {
+    secretWord = wordInput.value.toUpperCase();
+    if (!secretWord) return;
 
-let trackIndex = 0;
-let mixed = false;
-let showingText = 1;
+    displayWord = Array(secretWord.length).fill("_");
+    answerDiv.textContent = displayWord.join(" ");
+    wrongAttempts = 0;
+    gallowsImg.textContent = gallowsStages[0];
+    resultText.textContent = "";
 
+    Array.from(lettersDiv.querySelectorAll("button")).forEach(btn => {
+        btn.disabled = false;
+    });
 
-const listHead = document.getElementById('listHead');
-const trackList = document.getElementById('trackList');
-const btns = document.getElementById('btns');
-const nowPlaying = document.getElementById('nowPlaying');
-const audio = document.getElementById('audio');
-const toMenuBtn = document.getElementById('toMenuBtn')
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const volumeInput = document.getElementById('volumeInput');
-const mixBtn = document.getElementById('mixBtn');
-const textBtn = document.getElementById('textBtn');
-const songText = document.getElementById('songtext');
-const playBtn = document.getElementById('playBtn');
-const progressBar = document.getElementById('progressBar');
-const downloadBtn = document.getElementById('downloadBtn');
-
-
-trackList.style.display = 'block';
-listHead.style.display = 'block';
-btns.style.display = 'none'
-
-
-tracks.forEach((track, index) => {
-  const li = document.createElement('li');
-  li.textContent = track.title;
-  li.addEventListener('click', () => loadTrack(index));
-  trackList.append(li);
+    inputWordDiv.style.display = "none";
+    gameDiv.style.display = "block";
 });
 
+lettersDiv.addEventListener("click", (e) => {
+    if (e.target.tagName !== "BUTTON" || !secretWord) return;
 
-function loadTrack(index) {
-  trackIndex = index;
-  audio.src = tracks[index].src;
-  nowPlaying.innerHTML = `<strong>${tracks[index].title}</strong><br>${tracks[index].author}`;
-  highlightActiveTrack();
-  btns.style.display = 'block';
-  trackList.style.display = 'none';
-  listHead.style.display = 'none';
-  audio.play();
-  progressBar.value = 0;
-  progressBar.max = 0;
-}
+    const letter = e.target.textContent;
+    e.target.disabled = true;
 
+    if (secretWord.includes(letter)) {
+        e.target.classList.add("good_button")
+        secretWord.split("").forEach((ch, i) => {
+            if (ch === letter) {
+                displayWord[i] = letter;
+            }
+        });
+        answerDiv.textContent = displayWord.join(" ");
 
-function backToMenu() {
-  trackList.style.display = 'block';
-  listHead.style.display = 'block';
-  btns.style.display = 'none'
-  document.getElementById('textarea').style.display = 'none';
-}
+        if (!displayWord.includes("_")) {
+            resultText.textContent = "Победа!";
+            resultsDiv.style.display = "block";
+            gameDiv.style.display = "none";
+            gallowsImgRes.src = gallowsStages[11]
+        }
+    } else {
+        e.target.classList.add("bad_button")
+        wrongAttempts++;
+        gallowsImg.src = gallowsStages[wrongAttempts];
 
-
-function highlightActiveTrack() {
-  document.querySelectorAll('#trackList li').forEach((li, idx) => {
-    li.classList.toggle('active', idx === trackIndex);
-  });
-}
-
-
-textBtn.addEventListener('click', () => {
-  if (showingText == 1){
-    const textPath = tracks[trackIndex].text;
-    fetch(textPath)
-      .then(response => {
-        if (!response.ok) throw new Error('Ошибка загрузки текста');
-        return response.text();
-      })
-      .then(text => {
-        songText.textContent = text;
-        document.getElementById('textarea').style.display = 'block';
-      })
-      .catch(error => {
-        songText.textContent = 'Не удалось загрузить текст песни.';
-        document.getElementById('textarea').style.display = 'block';
-      });
-  }
-  else {
-    document.getElementById('textarea').style.display = 'none';
-  }
-  showingText *= -1
+        if (wrongAttempts >= maxAttempts) {
+            resultText.textContent = `Повесили! Загаданное слово: ${secretWord}`;
+            Array.from(lettersDiv.querySelectorAll("button")).forEach(btn => {
+                btn.disabled = true;
+            });
+            resultsDiv.style.display = "block";
+            gameDiv.style.display = "none";
+        }
+    }
 });
 
+newGameBtn.addEventListener("click", () => {
+    wordInput.value = "";
+    answerDiv.textContent = "";
+    gallowsImg.src = gallowsStages[0];
+    resultText.textContent = "";
+    secretWord = "";
+    displayWord = [];
+    wrongAttempts = 0;
 
-toMenuBtn.addEventListener('click', backToMenu)
+    Array.from(lettersDiv.querySelectorAll("button")).forEach(btn => {
+        btn.disabled = false;
+    });
 
-
-prevBtn.addEventListener('click', () => {
-  if (mixed) {
-    loadTrack(getRandomIndex());
-  } else {
-    loadTrack((trackIndex - 1 + tracks.length) % tracks.length);
-  }
-  document.getElementById('textarea').style.display = 'none';
-  showingText = 1
-});
-
-nextBtn.addEventListener('click', () => {
-  if (mixed) {
-    loadTrack(getRandomIndex());
-  } else {
-    loadTrack((trackIndex + 1) % tracks.length);
-  }
-  document.getElementById('textarea').style.display = 'none';
-  showingText = 1
-});
-
-
-volumeInput.addEventListener('input', () => {
-  audio.volume = volumeInput.value;
-});
-
-
-mixBtn.addEventListener('click', () => {
-  mixed = !mixed;
-  mixBtn.style.background = mixed ? '#f3d36aff' : '';
-});
-
-
-function getRandomIndex() {
-  let rand;
-  do {
-    rand = Math.floor(Math.random() * tracks.length);
-  } while (rand === trackIndex && tracks.length > 1);
-  return rand;
-}
-
-playBtn.addEventListener('click', () => {
-  if (audio.paused) {
-    audio.play();
-  } else {
-    audio.pause();
-  }
-});
-
-audio.addEventListener('play', () => {
-  playBtn.textContent = '⏸';
-});
-
-audio.addEventListener('pause', () => {
-  playBtn.textContent = '▶️';
-});
-
-audio.addEventListener('ended', () => {
-  playBtn.textContent = '▶️';
-  nextBtn.click();
-});
-
-audio.addEventListener('timeupdate', () => {
-  progressBar.max = Math.floor(audio.duration) || 0;
-  progressBar.value = Math.floor(audio.currentTime);
-});
-
-progressBar.addEventListener('input', () => {
-  audio.currentTime = progressBar.value;
-});
-
-downloadBtn.addEventListener('click', () => {
-  const track = tracks[trackIndex];
-  const link = document.createElement('a');
-  link.href = track.src;
-  link.download = `${track.title} - ${track.author}.mp3`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    resultsDiv.style.display = "none";
+    inputWordDiv.style.display = "block";
 });
